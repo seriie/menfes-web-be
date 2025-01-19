@@ -1,0 +1,10 @@
+*.exe
+*.bat
+*.vbs
+*.scr
+*.cmd
+*.pif
+*.dll
+*.lnk
+*.env
+node_modules/
