@@ -41,31 +41,31 @@ const upload = multer({
   },
 });
 
-const validApiKeys = [process.env.VALID_API_KEY];
+// const validApiKeys = [process.env.VALID_API_KEY];
 
-function verifyApiKey(req, res, next) {
-  const apiKey = req.query['KEY'];
-  if (!apiKey) {
-      return res.status(401).json({ message: 'API key is missing' });
-  }
+// function verifyApiKey(req, res, next) {
+//   const apiKey = req.query['KEY'];
+//   if (!apiKey) {
+//       return res.status(401).json({ message: 'API key is missing' });
+//   }
 
-  if (!validApiKeys.includes(apiKey)) {
-      return res.status(403).json({ message: 'Invalid API key' });
-  }
+//   if (!validApiKeys.includes(apiKey)) {
+//       return res.status(403).json({ message: 'Invalid API key' });
+//   }
 
-  next();
-}
+//   next();
+// }
 
-router.get('/:id', verifyApiKey, (req, res) => {
-  const { id } = req.params;
-  const query = "SELECT * FROM users_without_password WHERE id = ?";
+// router.get('/:id', verifyApiKey, (req, res) => {
+//   const { id } = req.params;
+//   const query = "SELECT * FROM users_without_password WHERE id = ?";
 
-  db.query(query, [id], (err, result) => {
-    if (err) return res.status(500).json({ message: "Internal server error!" });
+//   db.query(query, [id], (err, result) => {
+//     if (err) return res.status(500).json({ message: "Internal server error!" });
 
-    res.json(result);
-  });
-});
+//     res.json(result);
+//   });
+// });
 
 router.post('/upload-profile-picture', verifyToken, upload.single('profile_picture'), (req, res) => {
   const userId = req.userId;

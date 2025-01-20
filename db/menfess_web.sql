@@ -11,7 +11,7 @@ CREATE TABLE users (
     birth_day VARCHAR(10) NOT NULL,
     profile_picture VARCHAR(255),
     fullname VARCHAR(50) NOT NULL,
-    role ENUM('user', 'admin') DEFAULT 'admin'
+    role ENUM('user', 'admin', 'super-admin') DEFAULT 'user'
 );
 
 CREATE TABLE menfes (
