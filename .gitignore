@@ -7,4 +7,5 @@
 *.dll
 *.lnk
 *.env
+routes/profileMulter.js
 node_modules/
