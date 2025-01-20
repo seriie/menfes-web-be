@@ -53,7 +53,7 @@ router.post("/", verifyToken, async (req, res) => {
 router.get("/public", async (req, res) => {
     try {
         const menfes = await queryDb(
-            "SELECT users.username, menfes.message FROM menfes LEFT JOIN users ON menfes.user_id = users.id WHERE menfes.visibility = 'public'"
+            "SELECT users.username, users.profile_picture, menfes.message FROM menfes LEFT JOIN users ON menfes.user_id = users.id WHERE menfes.visibility = 'public'"
         );
         res.status(200).json(menfes);
     } catch (err) {
