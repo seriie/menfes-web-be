@@ -1,87 +1,81 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const db = require("../config/db");
 const jwt = require("jsonwebtoken");
-require('../middleware/token');
-require('dotenv').config();
-const JWT_SECRET = process.env.JWT_SECRET || 'qwerty12345';
+const queryDb = require("../helper/query");
+require("dotenv").config();
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || "qwerty12345";
 
 router.post("/register", async (req, res) => {
-    const { username, email, password, birthday, fullname } = req.body;
+  const { username, email, password, birthday, fullname } = req.body;
 
-    if (!username || !email || !password || !birthday || !fullname) {
-        return res.status(400).json({ message: "All fields are required!" });
+  if (!username || !email || !password || !birthday || !fullname) {
+    return res.status(400).json({ message: "All fields are required!" });
+  }
+
+  try {
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const joinDate = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
+
+    // Check if username or email already exists
+    const checkUser = "SELECT * FROM users WHERE username = ? OR email = ?";
+    const results = await queryDb(checkUser, [username, email]);
+
+    if (results.length > 0) {
+      const existingField = results[0].username === username ? "Username" : "Email";
+      return res.status(400).json({ message: `${existingField} already exists!` });
     }
 
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
+    // Insert user data into database
+    const sql =
+      "INSERT INTO users (username, email, password, join_date, birth_day, fullname) VALUES (?, ?, ?, ?, ?, ?)";
+    await queryDb(sql, [username, email, hashedPassword, joinDate, birthday, fullname]);
 
-        const joinDate = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
-
-        const checkUser = "SELECT * FROM users WHERE username = ? OR email = ?";
-        db.query(checkUser, [username, email], (err, results) => {
-            if (err) {
-                return res.status(500).json({ message: "Error checking username/email!", error: err.message });
-            }
-
-            if (results.length > 0) {
-                const existingField = results[0].username === username ? "Username" : "Email";
-                return res.status(400).json({ message: `${existingField} already exists!` });
-            }
-
-            const sql = "INSERT INTO users (username, email, password, join_date, birth_day, fullname) VALUES (?, ?, ?, ?, ?, ?)";
-            db.query(sql, [username, email, hashedPassword, joinDate, birthday, fullname], (err, result) => {
-                if (err) {
-                    return res.status(500).json({ message: "Error registering user!", error: err.message });
-                }
-
-                res.status(201).json({ message: "User registered successfully!" });
-            });
-        });
-    } catch (error) {
-        res.status(500).json({ message: "An error occurred!", error: error.message });
-    }
+    res.status(201).json({ message: "User registered successfully!" });
+  } catch (err) {
+    console.error("Error during registration:", err.message);
+    res.status(500).json({ message: "An error occurred!", error: err.message });
+  }
 });
 
-router.post("/login", (req, res) => {
-    const { email, password } = req.body;
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Please fill email and password' });
+  if (!email || !password) {
+    return res.status(400).json({ message: "Please fill email and password" });
+  }
+
+  try {
+    // Check if user exists
+    const sql = "SELECT * FROM users WHERE email = ?";
+    const results = await queryDb(sql, [email]);
+
+    if (results.length === 0) {
+      return res.status(400).json({ message: "Email not found" });
     }
 
-    const sql = 'SELECT * FROM users WHERE email = ?';
-    db.query(sql, [email], (err, results) => {
-        if (err) {
-            return res.status(500).json({ message: 'Server error' });
-        }
-        if (results.length === 0) {
-            return res.status(400).json({ message: 'Email not found' });
-        }
+    const user = results[0];
 
-        const user = results[0];
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid password" });
+    }
 
-        bcrypt.compare(password, user.password, (err, isMatch) => {
-            if (err) {
-                return res.status(500).json({ message: 'Error verifying password' });
-            }
-            if (!isMatch) {
-                return res.status(400).json({ message: 'Invalid password' });
-            }
+    // Generate JWT
+    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1h" });
 
-            const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '1h' });
-
-            console.log("DEBUG: Token:", token);
-
-            res.json({
-                message: 'Login successful',
-                userId: user.id,
-                token,
-            });
-        });
+    res.json({
+      message: "Login successful",
+      userId: user.id,
+      token,
     });
+  } catch (err) {
+    console.error("Error during login:", err.message);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
 });
 
 module.exports = router;

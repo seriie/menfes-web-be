@@ -6,18 +6,22 @@ const db_config = {
     user: process.env.USER,
     password: process.env.PW,
     database: process.env.DB,
-    port: process.env.PORT
-}
+    port: process.env.PORT,
+    waitForConnections: true,
+    connectionLimit: 10, // Maksimal koneksi dalam pool
+    queueLimit: 0 // Tidak ada limit antrean koneksi
+};
 
-db = mysql.createConnection(db_config);
+const pool = mysql.createPool(db_config);
 
-db.connect((err) => {
+pool.getConnection((err, connection) => {
     if (err) {
         console.error('Error connecting to db: ' + err.message);
         return;
     }
 
     console.log('Connected to db');
+    connection.release();
 });
 
-module.exports = db;
+module.exports = pool;

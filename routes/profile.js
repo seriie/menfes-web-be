@@ -1,20 +1,29 @@
 const express = require('express');
-const db = require('../config/db');
+const queryDb = require('../helper/query');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const router = express.Router();
+const bcrypt = require('bcryptjs');
 const verifyToken = require('../middleware/token');
+const router = express.Router();
 require('dotenv').config();
 
+// Helper: Delete File
+const deleteFile = (filePath) => {
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+};
+
+// Create uploads folder if not exists
 const createUploadsFolder = (folder) => {
   if (!fs.existsSync(folder)) {
     fs.mkdirSync(folder, { recursive: true });
   }
 };
-
 createUploadsFolder('./uploads/profile');
 
+// Multer setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, './uploads/profile');
@@ -24,7 +33,6 @@ const storage = multer.diskStorage({
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
-
 const upload = multer({
   storage,
   limits: { fileSize: 2 * 1024 * 1024 },
@@ -36,66 +44,42 @@ const upload = multer({
     if (extname && mimetype) {
       cb(null, true);
     } else {
-      cb(new Error('File must be image (JPEG/JPG/PNG)!'));
+      cb(new Error('File must be an image (JPEG/JPG/PNG)!'));
     }
   },
 });
 
-// const validApiKeys = [process.env.VALID_API_KEY];
-
-// function verifyApiKey(req, res, next) {
-//   const apiKey = req.query['KEY'];
-//   if (!apiKey) {
-//       return res.status(401).json({ message: 'API key is missing' });
-//   }
-
-//   if (!validApiKeys.includes(apiKey)) {
-//       return res.status(403).json({ message: 'Invalid API key' });
-//   }
-
-//   next();
-// }
-
-// router.get('/:id', verifyApiKey, (req, res) => {
-//   const { id } = req.params;
-//   const query = "SELECT * FROM users_without_password WHERE id = ?";
-
-//   db.query(query, [id], (err, result) => {
-//     if (err) return res.status(500).json({ message: "Internal server error!" });
-
-//     res.json(result);
-//   });
-// });
-
-router.post('/upload-profile-picture', verifyToken, upload.single('profile_picture'), (req, res) => {
+// Routes
+router.post('/upload-profile-picture', verifyToken, upload.single('profile_picture'), async (req, res) => {
   const userId = req.userId;
   const profilePicture = req.file ? `uploads/profile/${req.file.filename}` : null;
-  console.log(profilePicture);
 
   if (!profilePicture) {
-    return res.status(400).json({ message: 'File must uploaded!' });
+    return res.status(400).json({ message: 'File must be uploaded!' });
   }
 
-  const sql = 'UPDATE users SET profile_picture = ? WHERE id = ?';
-  db.query(sql, [profilePicture, userId], (err, result) => {
-    if (err) {
-      return res.status(500).json({ message: 'Failed to save file to db', error: err.message });
-    }
+  try {
+    const sql = 'UPDATE users SET profile_picture = ? WHERE id = ?';
+    await queryDb(sql, [profilePicture, userId]);
     res.status(200).json({ message: 'Profile picture uploaded successfully!', profilePicture });
-  });
+  } catch (err) {
+    deleteFile(profilePicture);
+    console.error('Error uploading profile picture:', err.message);
+    res.status(500).json({ message: 'Failed to save file to database' });
+  }
 });
 
-router.get('/', verifyToken, (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   const userId = req.userId;
 
-  const sql = 'SELECT id, username, email, join_date, birth_day, profile_picture, fullname FROM users WHERE id = ?';
-  db.query(sql, [userId], (err, results) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error fetching profile data' });
-    }
+  try {
+    const sql = 'SELECT id, username, email, join_date, birth_day, profile_picture, fullname FROM users WHERE id = ?';
+    const results = await queryDb(sql, [userId]);
+
     if (results.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
+
     const user = results[0];
     res.json({
       id: user.id,
@@ -104,15 +88,17 @@ router.get('/', verifyToken, (req, res) => {
       email: user.email,
       join_date: user.join_date,
       birth_day: user.birth_day,
-      profile_picture: user.profile_picture ? `http://localhost:9000/${user.profile_picture}` : null,
+      profile_picture: user.profile_picture ? `${process.env.BASE_URL}/${user.profile_picture}` : null,
     });
-  });
+  } catch (err) {
+    console.error('Error fetching profile:', err.message);
+    res.status(500).json({ message: 'Error fetching profile data' });
+  }
 });
 
 router.put('/:id', verifyToken, upload.single('profile_picture'), async (req, res) => {
   const { id } = req.params;
   const { username, email, password, fullname, birth_day } = req.body;
-
   const profilePicture = req.file ? `uploads/profile/${req.file.filename}` : null;
 
   let query = "UPDATE users SET ";
@@ -122,32 +108,27 @@ router.put('/:id', verifyToken, upload.single('profile_picture'), async (req, re
     query += "username = ?, ";
     params.push(username);
   }
-
   if (email) {
     query += "email = ?, ";
     params.push(email);
   }
-
   if (password) {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       query += "password = ?, ";
       params.push(hashedPassword);
     } catch (err) {
-      return res.status(500).json({ message: "Failed to hash password!", error: err.message });
+      return res.status(500).json({ message: 'Failed to hash password!', error: err.message });
     }
   }
-
   if (fullname) {
     query += "fullname = ?, ";
     params.push(fullname);
   }
-
   if (birth_day) {
     query += "birth_day = ?, ";
     params.push(birth_day);
   }
-
   if (profilePicture) {
     query += "profile_picture = ?, ";
     params.push(profilePicture);
@@ -156,33 +137,35 @@ router.put('/:id', verifyToken, upload.single('profile_picture'), async (req, re
   query = query.slice(0, -2) + " WHERE id = ?";
   params.push(id);
 
-  db.query(query, params, (err, result) => {
-    if (err) {
-      if (profilePicture && fs.existsSync(profilePicture)) {
-        fs.unlinkSync(profilePicture);
-      }
-      return res.status(500).json({ message: "Failed to update profile!", error: err.message });
-    }
-
+  try {
+    const result = await queryDb(query, params);
     if (result.affectedRows === 0) {
-      if (profilePicture && fs.existsSync(profilePicture)) {
-        fs.unlinkSync(profilePicture);
-      }
-      return res.status(404).json({ message: "User not found!" });
+      deleteFile(profilePicture);
+      return res.status(404).json({ message: 'User not found!' });
     }
-
-    res.status(200).json({ message: "Profile successfully updated!" });
-  });
+    res.status(200).json({ message: 'Profile successfully updated!' });
+  } catch (err) {
+    deleteFile(profilePicture);
+    console.error('Error updating profile:', err.message);
+    res.status(500).json({ message: 'Failed to update profile!' });
+  }
 });
 
-
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   const { id } = req.params;
-  const query = "DELETE FROM users WHERE id = ?";
-  db.query(query, [id], (err, result) => {
-      if (err) return res.status(500).json({ message: "Failed to delete accounts!", err });
-      res.status(200).json({ message: "User account deleted successfully!" })
-  });
+
+  try {
+    const query = "DELETE FROM users WHERE id = ?";
+    const result = await queryDb(query, [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'User not found!' });
+    }
+    res.status(200).json({ message: 'User account deleted successfully!' });
+  } catch (err) {
+    console.error('Error deleting user:', err.message);
+    res.status(500).json({ message: 'Failed to delete account!' });
+  }
 });
 
 module.exports = router;
