@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://menfes-web.vercel.app/sitemap.xml
