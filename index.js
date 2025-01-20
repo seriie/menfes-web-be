@@ -24,31 +24,40 @@ app.get('/robots.txt', (req, res) => {
 });
 
 app.get('/sitemap.xml', async (req, res) => {
-    try {
-        const frontendBaseUrl = process.env.FRONTEND_BASE_URL;
+  try {
+      const frontendBaseUrl = process.env.FRONTEND_BASE_URL || 'https://menfes-web.vercel.app';
+      const sitemap = new SitemapStream({ hostname: frontendBaseUrl });
 
-        const sitemap = new SitemapStream({ hostname: frontendBaseUrl });
-        
-        // Route frontend
-        const data = [
+      // Route frontend (ensure all URLs are correct)
+      const routes = [
           { url: '/', changefreq: 'daily', priority: 1.0 },
           { url: '/login', changefreq: 'monthly', priority: 0.8 },
           { url: '/register', changefreq: 'monthly', priority: 0.8 },
           { url: '/create-menfes', changefreq: 'weekly', priority: 0.9 },
           { url: '/inbox', changefreq: 'daily', priority: 0.7 },
           { url: '/profile', changefreq: 'weekly', priority: 0.6 },
-        ];
+      ];
 
-        // Convert data to XML sitemap
-        const xml = await streamToPromise(sitemap.end(data));
+      // Write each route to the sitemap stream
+      routes.forEach(route => {
+          if (route.url) {
+              sitemap.write(route);
+          } else {
+              console.error(`Route is undefined:`, route); // Debugging for undefined routes
+          }
+      });
 
-        // Send response
-        res.header('Content-Type', 'application/xml');
-        res.send(xml.toString());
-    } catch (error) {
+      sitemap.end(); // Close the stream
+
+      // Convert stream to XML and send response
+      const xml = await streamToPromise(sitemap);
+      res.header('Content-Type', 'application/xml');
+      res.send(xml.toString());
+  } catch (error) {
+      console.error('Error generating sitemap:', error);
       res.status(500).send('Error generating sitemap');
-    }
-});  
+  }
+});
 
 // const PORT = 9000;
 // app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
