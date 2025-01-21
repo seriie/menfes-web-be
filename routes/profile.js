@@ -32,7 +32,7 @@ router.get('/', verifyToken, async (req, res) => {
   const userId = req.userId;
 
   try {
-    const sql = 'SELECT id, username, email, join_date, birth_day, profile_picture, fullname FROM users WHERE id = ?';
+    const sql = 'SELECT id, username, email, join_date, birth_day, profile_picture, fullname, role FROM users WHERE id = ?';
     const results = await queryDb(sql, [userId]);
 
     if (results.length === 0) {
@@ -48,6 +48,7 @@ router.get('/', verifyToken, async (req, res) => {
       join_date: user.join_date,
       birth_day: user.birth_day,
       profile_picture: user.profile_picture,
+      role: user.role
     });
   } catch (err) {
     console.error('Error fetching profile:', err.message);
