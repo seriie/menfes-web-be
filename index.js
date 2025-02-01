@@ -60,6 +60,6 @@ app.get('/sitemap.xml', async (req, res) => {
   }
 });
 
-const PORT = 9000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-// module.exports = app;
+// const PORT = 9000;
+// app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+module.exports = app;
