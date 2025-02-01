@@ -11,7 +11,7 @@ CREATE TABLE users (
     birth_day VARCHAR(10) NOT NULL,
     profile_picture VARCHAR(255),
     fullname VARCHAR(50) NOT NULL,
-    role ENUM('user', 'admin', 'super-admin') DEFAULT 'user'
+    role ENUM('user', 'admin', 'owner') DEFAULT 'user'
 );
 
 CREATE TABLE menfes (
@@ -21,7 +21,9 @@ CREATE TABLE menfes (
     visibility ENUM('public', 'private') DEFAULT 'public',
     target_user_id INT DEFAULT NULL,
     created_at VARCHAR(30) NOT NULL,
+    pinned TINYINT(1) DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (likes) REFERENCES menfes(id) ON DELETE CASCADE,
     FOREIGN KEY (target_user_id) REFERENCES users(id)
 );
 

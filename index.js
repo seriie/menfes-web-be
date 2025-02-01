@@ -5,6 +5,7 @@ const bodyParser = require("body-parser");
 const authRoutes = require('./routes/auth');
 const menfesRoutes = require('./routes/menfes');
 const profileRoutes = require('./routes/profile');
+// const profileRoutes = require('./routes/profileMulter');
 const compression = require('compression');
 const { SitemapStream, streamToPromise } = require('sitemap');
 

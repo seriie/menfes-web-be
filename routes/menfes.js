@@ -53,7 +53,7 @@ router.post("/", verifyToken, async (req, res) => {
 router.get("/public", async (req, res) => {
     try {
         const menfes = await queryDb(
-            "SELECT users.username, users.profile_picture, users.role, menfes.message FROM menfes LEFT JOIN users ON menfes.user_id = users.id WHERE menfes.visibility = 'public'"
+            "SELECT users.username, users.profile_picture, users.role, menfes.id, menfes.message,  menfes.created_at, menfes.pinned FROM menfes LEFT JOIN users ON menfes.user_id = users.id WHERE menfes.visibility = 'public' ORDER BY menfes.pinned DESC, menfes.id DESC"
         );
         res.status(200).json(menfes);
     } catch (err) {
@@ -77,15 +77,35 @@ router.get("/private", verifyToken, async (req, res) => {
     }
 });
 
-// DELETE menfes
+router.patch("/:id/pin", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [message] = await queryDb("SELECT pinned FROM menfes WHERE id = ?", [id]);
+
+        if (!message) return res.status(404).json({ error: "Message not found" });
+        
+        const newPinnedStatus = !!message.pinned ? 0 : 1;
+
+        if (newPinnedStatus === 1) {
+            await queryDb("UPDATE menfes SET pinned = 0 WHERE pinned = 1");
+        }        
+
+        await queryDb("UPDATE menfes SET pinned = ? WHERE id = ?", [newPinnedStatus, id]);
+
+        res.json({ success: true, pinned: newPinnedStatus });
+    } catch (err) {
+        res.status(500).json({ error: "Database error" });
+    }
+});
+
 router.delete("/:id", verifyToken, async (req, res) => {
-    const userId = req.userId;
+    // const userId = req.userId;
     const { id } = req.params;
 
     try {
         const result = await queryDb(
-            "DELETE FROM menfes WHERE id = ? AND user_id = ?",
-            [id, userId]
+            "DELETE FROM menfes WHERE id = ?",
+            [id]
         );
 
         if (result.affectedRows === 0) {
