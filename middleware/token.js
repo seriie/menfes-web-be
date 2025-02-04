@@ -16,6 +16,9 @@ const verifyToken = (req, res, next) => {
     console.log("DEBUG: Decoded User ID:", decoded.id);
     next();
   } catch (err) {
+    if (err.name == 'TokenExpiredError') {
+      return res.status(403).json({ message: 'Your session expired, please re-login!' });
+    }
     return res.status(401).json({ message: 'Invalid token!' });
   }
 };

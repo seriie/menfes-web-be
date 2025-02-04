@@ -48,7 +48,6 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-    // Check if user exists
     const sql = "SELECT * FROM users WHERE email = ?";
     const results = await queryDb(sql, [email]);
 
@@ -58,14 +57,12 @@ router.post("/login", async (req, res) => {
 
     const user = results[0];
 
-    // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid password" });
     }
 
-    // Generate JWT
-    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '1h' });
 
     res.json({
       message: "Login successful",

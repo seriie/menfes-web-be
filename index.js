@@ -29,7 +29,6 @@ app.get('/sitemap.xml', async (req, res) => {
       const frontendBaseUrl = process.env.FRONTEND_BASE_URL || 'https://menfes-web.vercel.app';
       const sitemap = new SitemapStream({ hostname: frontendBaseUrl });
 
-      // Route frontend (ensure all URLs are correct)
       const routes = [
           { url: '/', changefreq: 'daily', priority: 1.0 },
           { url: '/login', changefreq: 'monthly', priority: 0.8 },
@@ -39,18 +38,16 @@ app.get('/sitemap.xml', async (req, res) => {
           { url: '/profile', changefreq: 'weekly', priority: 0.6 },
       ];
 
-      // Write each route to the sitemap stream
       routes.forEach(route => {
           if (route.url) {
               sitemap.write(route);
           } else {
-              console.error(`Route is undefined:`, route); // Debugging for undefined routes
+              console.error(`Route is undefined:`, route);
           }
       });
 
-      sitemap.end(); // Close the stream
+      sitemap.end();
 
-      // Convert stream to XML and send response
       const xml = await streamToPromise(sitemap);
       res.header('Content-Type', 'application/xml');
       res.send(xml.toString());
