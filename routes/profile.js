@@ -57,13 +57,19 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
-router.get('/profiles', verifyApiKey, async (req, res) => {
+router.get('/profiles/:username', verifyApiKey, async (req, res) => {
   try {
-    const query = 'SELECT id, username, email, join_date, birth_day, profile_picture, fullname, role FROM users';
-    const profiles = await queryDb(query);
-    res.json(profiles);
+    const { username } = req.params;
+    const query = 'SELECT id, username, join_date, profile_picture, role FROM users WHERE username = ?';
+    const profiles = await queryDb(query, [username]);
+
+    if (profiles.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(profiles[0]);
   } catch (e) {
-    res.status(500).json({ message: "An error occured" });
+    res.status(500).json({ message: "An error occurred" });
   }
 });
 
