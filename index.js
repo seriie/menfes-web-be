@@ -4,8 +4,8 @@ const path = require('path');
 const bodyParser = require("body-parser");
 const authRoutes = require('./routes/auth');
 const menfesRoutes = require('./routes/menfes');
-const profileRoutes = require('./routes/profile');
-// const profileRoutes = require('./routes/profileMulter');
+// const profileRoutes = require('./routes/profile');
+const profileRoutes = require('./routes/profileMulter');
 const compression = require('compression');
 const { SitemapStream, streamToPromise } = require('sitemap');
 
@@ -14,6 +14,8 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(compression());
+app.use(express.static("frontend/build")); // Kalau deploy, pastikan ini
+
 
 app.get("/", (req, res) => res.send("Server is running!"));
 app.use("/auth", authRoutes);
@@ -55,6 +57,10 @@ app.get('/sitemap.xml', async (req, res) => {
       console.error('Error generating sitemap:', error);
       res.status(500).send('Error generating sitemap');
   }
+});
+
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve(__dirname, "frontend", "build", "index.html"));
 });
 
 // const PORT = 9000;

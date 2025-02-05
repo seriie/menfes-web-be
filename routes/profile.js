@@ -3,6 +3,7 @@ const queryDb = require('../helper/query');
 const { upload } = require('../config/cloudinary');
 const bcrypt = require('bcryptjs');
 const verifyToken = require('../middleware/token');
+const verifyApiKey = require('../middleware/api_key');
 const router = express.Router();
 
 // Routes
@@ -53,6 +54,16 @@ router.get('/', verifyToken, async (req, res) => {
   } catch (err) {
     console.error('Error fetching profile:', err.message);
     res.status(500).json({ message: 'Error fetching profile data' });
+  }
+});
+
+router.get('/profiles', verifyApiKey, async (req, res) => {
+  try {
+    const query = 'SELECT id, username, email, join_date, birth_day, profile_picture, fullname, role FROM users';
+    const profiles = await queryDb(query);
+    res.json(profiles);
+  } catch (e) {
+    res.status(500).json({ message: "An error occured" });
   }
 });
 

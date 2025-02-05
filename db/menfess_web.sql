@@ -27,6 +27,49 @@ CREATE TABLE menfes (
     FOREIGN KEY (target_user_id) REFERENCES users(id)
 );
 
+CREATE TABLE likes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    menfes_id INT NOT NULL,
+    created_at VARCHAR(30), 
+    UNIQUE(user_id, menfes_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (menfes_id) REFERENCES menfes(id) ON DELETE CASCADE
+);
+
+-- GET LIKES
+SELECT users.username, likes.created_at 
+FROM likes 
+JOIN users 
+ON likes.user_id = users.id 
+WHERE likes.menfes_id = 66;
+-- QUERY ON EXPRESS
+SELECT users.username, likes.created_at 
+FROM likes 
+JOIN users 
+ON likes.user_id = users.id 
+WHERE likes.menfes_id = ?;
+
+CREATE TABLE replies (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    menfes_id INT NOT NULL,
+    user_id INT NOT NULL,
+    reply_message TEXT NOT NULL,
+    created_at VARCHAR(30),
+    FOREIGN KEY (menfes_id) REFERENCES menfes(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE social_media (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    instragram VARCHAR(255) NOT NULL,
+    tiktok VARCHAR(255) NOT NULL,
+    facebook VARCHAR(255) NOT NULL,
+    twitter VARCHAR(255) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- SELECT MENFES MESSAGE FROM USERNAME WHERE ID = USER_ID
 SELECT username, message 
 FROM users 

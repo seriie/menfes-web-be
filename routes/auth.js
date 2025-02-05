@@ -17,7 +17,7 @@ router.post("/register", async (req, res) => {
   try {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const joinDate = new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
+    const joinDate = new Date().toISOString().slice(0, 19).replace("T", " ");
 
     // Check if username or email already exists
     const checkUser = "SELECT * FROM users WHERE username = ? OR email = ?";

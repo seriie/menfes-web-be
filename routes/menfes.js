@@ -8,10 +8,7 @@ const router = express.Router();
 router.post("/", verifyToken, async (req, res) => {
     const { message, visibility, targetUsername } = req.body;
     const userId = req.userId;
-    const created_at = new Date().toLocaleString('en-US', {
-        timeZone: 'Asia/Jakarta',
-        hour12: false,
-    });
+    const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
 
     if (!message || !visibility) {
         return res.status(400).json({ error: "Message and visibility are required!" });
@@ -52,9 +49,20 @@ router.post("/", verifyToken, async (req, res) => {
 // GET public menfes
 router.get("/public", async (req, res) => {
     try {
-        const menfes = await queryDb(
-            "SELECT users.username, users.profile_picture, users.role, menfes.id, menfes.message,  menfes.created_at, menfes.pinned FROM menfes LEFT JOIN users ON menfes.user_id = users.id WHERE menfes.visibility = 'public' ORDER BY menfes.pinned DESC, menfes.id DESC"
-        );
+        const menfes = await queryDb(`
+            SELECT users.username, users.profile_picture, users.role, 
+                   menfes.id, menfes.message, menfes.created_at, menfes.pinned, 
+                   COALESCE(like_count.total_likes, 0) AS total_likes 
+            FROM menfes 
+            LEFT JOIN users ON menfes.user_id = users.id 
+            LEFT JOIN (
+                SELECT menfes_id, COUNT(*) AS total_likes FROM likes GROUP BY menfes_id
+            ) AS like_count 
+            ON menfes.id = like_count.menfes_id 
+            WHERE menfes.visibility = 'public' 
+            ORDER BY menfes.pinned DESC, menfes.id DESC
+        `);        
+
         res.status(200).json(menfes);
     } catch (err) {
         console.error("Error fetching public menfes:", err.message);
@@ -74,6 +82,62 @@ router.get("/private", verifyToken, async (req, res) => {
     } catch (err) {
         console.error("Error fetching private menfes:", err.message);
         res.status(500).json({ error: "An error occurred" });
+    }
+});
+
+// POST like menfes
+router.post('/likes', verifyToken, async (req, res) => {
+    const { menfes_id } = req.body;
+    const user_id = req.userId;
+
+    if (!menfes_id) {
+        return res.status(400).json({ error: "Menfes ID is required!" });
+    }
+
+    try {
+        // Cek apakah user sudah like menfes ini
+        const existingLike = await queryDb("SELECT * FROM likes WHERE user_id = ? AND menfes_id = ?", [user_id, menfes_id]);
+
+        if (existingLike.length > 0) {
+            // Jika sudah like, hapus like (unlike)
+            await queryDb("DELETE FROM likes WHERE user_id = ? AND menfes_id = ?", [user_id, menfes_id]);
+            return res.json({ message: "Menfes unliked!" });
+        } else {
+            // Jika belum like, tambahkan like
+            await queryDb("INSERT INTO likes (user_id, menfes_id) VALUES (?, ?)", [user_id, menfes_id]);
+            return res.status(201).json({ message: "Menfes liked!" });
+        }
+    } catch (err) {
+        console.error("Error liking menfes:", err.message);
+        res.status(500).json({ error: "An error occurred" });
+    }
+});
+
+router.get("/:id/likes", async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const likes = await queryDb("SELECT COUNT(*) AS like_count FROM likes WHERE menfes_id = ?", [id]);
+        res.status(200).json({ like_count: likes[0].like_count });
+    } catch (err) {
+        console.error("Error fetching likes:", err.message);
+        res.status(500).json({ error: "An error occurred" });
+    }
+});
+
+router.get('/:id/liked', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const user_id = req.userId;
+
+    try {
+        const result = await queryDb(
+            "SELECT id FROM likes WHERE user_id = ? AND menfes_id = ?",
+            [user_id, id]
+        );
+
+        res.status(200).json({ menfes_id: id, liked: result.length > 0 });
+    } catch (e) {
+        res.status(500).json({ message: "An error occurred" })
     }
 });
 
