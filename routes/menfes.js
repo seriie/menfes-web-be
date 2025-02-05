@@ -6,7 +6,7 @@ const router = express.Router();
 
 // POST menfes
 router.post("/", verifyToken, async (req, res) => {
-    const { message, visibility, targetUsername } = req.body;
+    const { message, visibility, targetUsername, anonymous } = req.body;
     const userId = req.userId;
     const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
 
@@ -34,9 +34,9 @@ router.post("/", verifyToken, async (req, res) => {
             return res.status(201).json({ message: "Private menfes sent!" });
         } else {
             await queryDb(
-                "INSERT INTO menfes (user_id, message, created_at, visibility) VALUES (?, ?, ?, ?)",
-                [userId, message, created_at, visibility]
-            );
+                "INSERT INTO menfes (user_id, message, created_at, visibility, anonymous) VALUES (?, ?, ?, ?, ?)", 
+                [userId, message, created_at, visibility, anonymous]
+            );            
 
             return res.status(201).json({ message: "Public menfes sent!" });
         }
@@ -51,7 +51,7 @@ router.get("/public", async (req, res) => {
     try {
         const menfes = await queryDb(`
             SELECT users.username, users.profile_picture, users.role, 
-                   menfes.id, menfes.message, menfes.created_at, menfes.pinned, 
+                   menfes.id, menfes.message, menfes.created_at, menfes.pinned, menfes.anonymous, 
                    COALESCE(like_count.total_likes, 0) AS total_likes 
             FROM menfes 
             LEFT JOIN users ON menfes.user_id = users.id 

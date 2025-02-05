@@ -9,3 +9,4 @@
 *.env
 routes/profileMulter.js
 node_modules/
+uploads/profile/
