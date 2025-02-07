@@ -57,6 +57,20 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
+router.post('/role/:id', async (req, res) => {
+  const { role } = req.body;
+  const { id } = req.params;
+
+  try {
+    const sql = 'UPDATE users SET role = ? WHERE id = ?';
+    await queryDb(sql, [role, id]);
+
+    res.status(200).json({ message: 'Role updated successfully!' });
+  } catch (e) {
+    res.status(500).json({ message: "An error occurred" });
+  }
+});
+
 router.get('/profiles/:username', verifyApiKey, async (req, res) => {
   try {
     const { username } = req.params;

@@ -1,6 +1,7 @@
 const express = require("express");
 const verifyToken = require("../middleware/token");
 const queryDb = require('../helper/query');
+const verifyApiKey = require("../middleware/api_key");
 
 const router = express.Router();
 
@@ -8,7 +9,9 @@ const router = express.Router();
 router.post("/", verifyToken, async (req, res) => {
     const { message, visibility, targetUsername, anonymous } = req.body;
     const userId = req.userId;
-    const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
+    const date = new Date().toISOString().slice(0, 10).replace("T", " ");
+    const time = new Date().toLocaleTimeString();
+    const created_at = `${date} ${time}`;
 
     if (!message || !visibility) {
         return res.status(400).json({ error: "Message and visibility are required!" });
@@ -103,8 +106,11 @@ router.post('/likes', verifyToken, async (req, res) => {
             await queryDb("DELETE FROM likes WHERE user_id = ? AND menfes_id = ?", [user_id, menfes_id]);
             return res.json({ message: "Menfes unliked!" });
         } else {
-            // Jika belum like, tambahkan like
-            await queryDb("INSERT INTO likes (user_id, menfes_id) VALUES (?, ?)", [user_id, menfes_id]);
+            const date = new Date().toISOString().slice(0, 10).replace("T", " ");
+            const time = new Date().toLocaleTimeString();
+            const created_at = `${date} ${time}`;
+            
+            await queryDb("INSERT INTO likes (user_id, menfes_id, created_at) VALUES (?, ?, ?)", [user_id, menfes_id, created_at]);
             return res.status(201).json({ message: "Menfes liked!" });
         }
     } catch (err) {
@@ -128,7 +134,7 @@ router.get("/:id/likes", async (req, res) => {
 router.get('/:id/liked', verifyToken, async (req, res) => {
     const { id } = req.params;
     const user_id = req.userId;
-
+    
     try {
         const result = await queryDb(
             "SELECT id FROM likes WHERE user_id = ? AND menfes_id = ?",
@@ -137,7 +143,36 @@ router.get('/:id/liked', verifyToken, async (req, res) => {
 
         res.status(200).json({ menfes_id: id, liked: result.length > 0 });
     } catch (e) {
-        res.status(500).json({ message: "An error occurred" })
+        res.status(500).json({ message: "An error occurred" });
+    }
+});
+
+router.post('/reply/:id', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const user_id = req.userId;
+    const { reply_message } = req.body;
+    try {
+        const date = new Date().toISOString().slice(0, 10).replace("T", " ");
+        const time = new Date().toLocaleTimeString();
+        const created_at = `${date} ${time}`;
+        const query = "INSERT INTO replies (menfes_id, user_id, reply_message, created_at) VALUES (?, ?, ?, ?)";
+        
+        await queryDb(query, [id, user_id, reply_message, created_at]);
+        res.status(200).json({ message: "Reply sent!" });
+    } catch (e) {
+        res.status(500).json({ message: "Error sending reply!" });
+    }
+});
+
+router.get('/reply/:id', verifyApiKey, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const query = 'SELECT users.username, users.role, users.profile_picture, replies.menfes_id, replies.user_id, replies.reply_message, replies.created_at FROM replies JOIN users ON replies.user_id = users.id WHERE replies.menfes_id = ?';
+        const result = await queryDb(query, [id]);
+
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ message: "Error retrieving data" });
     }
 });
 
