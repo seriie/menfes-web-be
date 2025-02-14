@@ -13,8 +13,8 @@ router.post("/", verifyToken, async (req, res) => {
     const time = new Date().toLocaleTimeString();
     const created_at = `${date} ${time}`;
 
-    if (!message || !visibility) {
-        return res.status(400).json({ error: "Message and visibility are required!" });
+    if (!targetUsername && visibility === "private") {
+        return res.status(400).json({ error: "Please input target username!" });
     }
 
     try {
