@@ -29,4 +29,30 @@ router.post('/', async (req, res) => {
     }
 });
 
+router.get('/today', async (req, res) => {
+    try {
+        const sql = "SELECT COUNT(*) AS today FROM visitors WHERE DATE(visit_date) = CURDATE()";
+        const result = await queryDb(sql);
+
+        res.status(200).json(result);
+    } catch (e) {
+        res.status(500).json({ message: {
+            error: "Internal server error!"
+        } });
+    }
+});
+
+router.get('/total', async (req, res) => {
+    try {
+        const sql = "SELECT COUNT(*) AS total FROM visitors";
+        const result = await queryDb(sql);
+
+        res.status(200).json(result);
+    } catch (e) {
+        res.status(500).json({ message: {
+            error: "Internal server error!"
+        } });
+    }
+});
+
 module.exports = router;
