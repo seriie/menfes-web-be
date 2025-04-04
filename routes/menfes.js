@@ -9,9 +9,6 @@ const router = express.Router();
 router.post("/", verifyToken, async (req, res) => {
     const { message, visibility, targetUsername, anonymous } = req.body;
     const userId = req.userId;
-    const date = new Date().toISOString().slice(0, 10).replace("T", " ");
-    const time = new Date().toLocaleTimeString();
-    const created_at = `${date} ${time}`;
 
     if (!targetUsername && visibility === "private") {
         return res.status(400).json({ error: "Please input target username!" });
