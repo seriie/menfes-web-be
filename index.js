@@ -6,9 +6,11 @@ const authRoutes = require('./routes/auth');
 const menfesRoutes = require('./routes/menfes');
 const profilesRoutes = require('./routes/profiles');
 const profileRoutes = require('./routes/profile');
+const visitorRoutes = require('./routes/visitors');
 // const profileRoutes = require('./routes/profileMulter');
 const compression = require('compression');
 const { SitemapStream, streamToPromise } = require('sitemap');
+const PORT = 9000;
 
 const app = express();
 app.use(cors());
@@ -21,6 +23,7 @@ app.use("/auth", authRoutes);
 app.use("/menfes", menfesRoutes);
 app.use('/profile', profileRoutes);
 app.use('/profiles', profilesRoutes);
+app.use('/visitors', visitorRoutes);
 
 app.get('/robots.txt', (req, res) => {
     res.sendFile(path.join(__dirname, 'robots.txt'));
@@ -59,6 +62,5 @@ app.get('/sitemap.xml', async (req, res) => {
   }
 });
 
-// const PORT = 9000;
 // app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 module.exports = app;

@@ -2,14 +2,14 @@ const mysql = require('mysql2');
 require('dotenv').config();
 
 const db_config = {
-    host: process.env.HOST,
-    user: process.env.USER,
-    password: process.env.PW,
-    database: process.env.DB,
-    port: process.env.PORT,
+    host: process.env.DB_HOST,
+    user: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
     waitForConnections: true,
-    connectionLimit: 10, // Maksimal koneksi dalam pool
-    queueLimit: 0 // Tidak ada limit antrean koneksi
+    connectionLimit: 10,
+    queueLimit: 0
 };
 
 const pool = mysql.createPool(db_config);
