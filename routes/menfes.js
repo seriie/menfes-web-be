@@ -5,7 +5,6 @@ const verifyApiKey = require("../middleware/api_key");
 
 const router = express.Router();
 
-// POST menfes
 router.post("/", verifyToken, async (req, res) => {
     const { message, visibility, targetUsername, anonymous } = req.body;
     const userId = req.userId;
@@ -27,15 +26,15 @@ router.post("/", verifyToken, async (req, res) => {
 
             const targetUserId = targetUser[0].id;
             await queryDb(
-                "INSERT INTO menfes (user_id, message, visibility, created_at, target_user_id) VALUES (?, ?, ?, ?, ?)",
-                [userId, message, visibility, created_at, targetUserId]
+                "INSERT INTO menfes (user_id, message, visibility, target_user_id) VALUES (?, ?, ?, ?, ?)",
+                [userId, message, visibility, targetUserId]
             );
 
             return res.status(201).json({ message: "Private menfes sent!" });
         } else {
             await queryDb(
-                "INSERT INTO menfes (user_id, message, created_at, visibility, anonymous) VALUES (?, ?, ?, ?, ?)", 
-                [userId, message, created_at, visibility, anonymous]
+                "INSERT INTO menfes (user_id, message, visibility, anonymous) VALUES (?, ?, ?, ?, ?)", 
+                [userId, message, visibility, anonymous]
             );            
 
             return res.status(201).json({ message: "Public menfes sent!" });
