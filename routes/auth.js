@@ -107,6 +107,7 @@ router.get('/active-users', verifyApiKey, async (req, res) => {
       FROM sessions
       JOIN users ON sessions.user_id = users.id
       WHERE sessions.expires_at > NOW()
+      AND users.role = 'user'
     `;
 
     const activeUsers = await queryDb(sql);
