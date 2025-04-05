@@ -1,8 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const path = require('path');
-const http = require('http');
-const { Server } = require('socket.io'); 
 const bodyParser = require("body-parser");
 const authRoutes = require('./routes/auth');
 const menfesRoutes = require('./routes/menfes');
@@ -27,29 +25,6 @@ app.use("/menfes", menfesRoutes);
 app.use('/profile', profileRoutes);
 app.use('/profiles', profilesRoutes);
 app.use('/visitors', visitorRoutes);
-
-const server = http.createServer(app);
-const io = new Server(server, {
-    cors: {
-        origin: process.env.FRONTEND_BASE_URL,
-        methods: ["GET", "POST"]
-    }
-});
-
-let activeUsers = new Set();
-
-io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
-    activeUsers.add(socket.id);
-
-    io.emit("activeUsers", activeUsers.size);
-
-    socket.on("disconnect", () => {
-        console.log("User disconnected:", socket.id);
-        activeUsers.delete(socket.id);
-        io.emit("activeUsers", activeUsers.size);
-    });
-});
 
 app.get('/robots.txt', (req, res) => {
     res.sendFile(path.join(__dirname, 'robots.txt'));
