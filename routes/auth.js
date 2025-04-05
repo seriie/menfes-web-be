@@ -2,7 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const queryDb = require("../helper/query");
-const verifyToken = require('../middleware/token');
+const verifyApiKey = require('../middleware/api_key');
 require("dotenv").config();
 
 const router = express.Router();
@@ -100,7 +100,7 @@ router.post('/logout', async (req, res) => {
   }
 });
 
-router.get('/active-users', verifyToken, async (req, res) => {
+router.get('/active-users', verifyApiKey, async (req, res) => {
   try {
     const sql = `
       SELECT DISTINCT users.id, users.fullname, users.email
@@ -117,7 +117,7 @@ router.get('/active-users', verifyToken, async (req, res) => {
   }
 });
 
-router.get('/active-admin', verifyToken, async (req, res) => {
+router.get('/active-admin', verifyApiKey, async (req, res) => {
   try {
     const sql = `
     SELECT DISTINCT users.id, users.fullname, users.email

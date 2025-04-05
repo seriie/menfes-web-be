@@ -33,7 +33,7 @@ router.post("/", verifyToken, async (req, res) => {
             return res.status(201).json({ message: "Private menfes sent!" });
         } else {
             await queryDb(
-                "INSERT INTO menfes (user_id, message, visibility, anonymous) VALUES (?, ?, ?, ?, ?)", 
+                "INSERT INTO menfes (user_id, message, visibility, anonymous) VALUES (?, ?, ?, ?)", 
                 [userId, message, visibility, anonymous]
             );            
 
@@ -167,6 +167,17 @@ router.get('/reply/:id', verifyApiKey, async (req, res) => {
         const result = await queryDb(query, [id]);
 
         res.json(result);
+    } catch (e) {
+        res.status(500).json({ message: "Error retrieving data" });
+    }
+});
+
+router.get('/total-today', verifyApiKey, async (req, res) => {
+    try {
+        const sql = "SELECT COUNT(*) AS today FROM menfes WHERE DATE(created_at) = CURDATE()";
+        const result = await queryDb(sql);
+
+        res.status(200).json(result);
     } catch (e) {
         res.status(500).json({ message: "Error retrieving data" });
     }
